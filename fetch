@@ -55,6 +55,8 @@ while (true) {
     db_execute($cursor_stmt, [$vars['__CURSOR']]);
     $db->exec('END');
 
+    // After storing the data, notify. Other way around the long
+    // poller might miss some data. And rowid wouldn't be available.
     if ($data !== NULL) {
         $out = implode(',',$data);
         $zmq_publisher->send($out);
