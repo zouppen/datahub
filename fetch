@@ -1,0 +1,63 @@
+#!/usr/bin/env php
+<?php
+require_once(__DIR__.'/common.php');
+
+// Database
+$cursor = $db->querySingle('SELECT cursor FROM cursor');
+$add_stmt = $db->prepare("INSERT INTO temp (ts, value) VALUES (?,?)");
+$cursor_stmt = $db->prepare("UPDATE cursor SET cursor=?");
+
+// 0MQ
+$zmq_context = new ZMQContext();
+$zmq_publisher = $zmq_context->getSocket(ZMQ::SOCKET_PUB);
+$ipc_path = __DIR__.'/updates.ipc';
+$zmq_publisher->bind("ipc://".$ipc_path);
+chmod($ipc_path, 0777); // Allow access to all local users
+
+// Data source. Ugly, FIXME safe
+//$flow = popen("ssh 80.186.52.58 \"./export_log '$cursor'\"", "r");
+$flow = popen("ssh 80.186.52.58 '$cursor'", "r");
+
+while (true) {
+    $vars = [];
+    while (true) {
+        $line = fgets($flow);
+        if ($line === FALSE) {
+            // It's over.
+            break 2;
+        } else if ($line === "\n") {
+            break;
+        } else {
+            // Split the string and put to the storage
+            $pos = strpos($line, '=');
+            $vars[substr($line, 0, $pos)] = substr($line, $pos+1, strlen($line)-$pos-2);
+        }
+    }
+
+    // Extract temperature from the message
+    $temp_str = explode(',', $vars['MESSAGE'], 5)[3];
+
+    // Now inserting the data and updating the cursor position
+    $db->exec('BEGIN');
+    if (is_numeric($temp_str)) {
+        // Correct data. Store it.
+        $data = [
+            floor($vars['__REALTIME_TIMESTAMP'] / 1000000), // seconds
+            doubleval($temp_str),
+        ];
+        db_execute($add_stmt, $data);
+        array_unshift($data, $db->lastInsertRowID());
+    } else {
+        // Incorrect data, skip.
+        $data = NULL;
+        print("Skipping invalid line: ".$vars['MESSAGE']."\n");
+    }
+    db_execute($cursor_stmt, [$vars['__CURSOR']]);
+    $db->exec('END');
+
+    if ($data !== NULL) {
+        $out = implode(',',$data);
+        $zmq_publisher->send($out);
+        print($out."\n");
+    }
+}
