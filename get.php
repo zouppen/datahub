@@ -1,8 +1,8 @@
 <?php
-header("Content-type: text/csv; charset=utf-8");
+header("Content-type: text/plain; charset=utf-8");
 require_once(__DIR__.'/common.php');
 
-$page_size = 20;
+$page_size = 1000;
 
 // Connect to the queue first (new data may arrive while this script is running)
 $context = new ZMQContext();
@@ -11,6 +11,7 @@ $subscriber->connect("ipc://".__DIR__."/updates.ipc");
 $subscriber->setSockOpt(ZMQ::SOCKOPT_SUBSCRIBE, "");
 
 // Prepare statements
+$get_newer_count_stmt = $db->prepare("SELECT count(*) from temp WHERE rowid > ?");
 $get_newer_stmt = $db->prepare("SELECT rowid, ts, value from temp WHERE rowid > ? LIMIT $page_size");
 $get_ptr_stmt = $db->prepare("SELECT rowid FROM temp WHERE ts >= ? LIMIT 1;");
 $get_last_stmt = $db->prepare("SELECT MAX(rowid) FROM temp");
@@ -39,17 +40,29 @@ if ($raw_ts !== NULL) {
     exit(0);
 }
 
-$res = db_execute($get_newer_stmt, [intval($raw_row)]); // Use provided pointer
-$got = FALSE;
+// Allow any origin
+header("Access-Control-Allow-Origin: *");
+
+// Use provided pointer and search count and data
+$db->exec('BEGIN');
+$n = db_execute($get_newer_count_stmt, [intval($raw_row)])->fetchArray(SQLITE3_NUM)[0];
+$res = db_execute($get_newer_stmt, [intval($raw_row)]);
+$db->exec('END');
+
+if ($n === 0) {
+    // If we didn't get any, listen for new data
+    $row = $subscriber->recv();
+    print($row."\n");
+    exit(0);
+}
+
+if ($n >= $page_size) {
+    // This is a full page. Cache it.
+    header("Cache-Control: public, max-age=86400");
+}
+
 while (true) {
     $row = $res->fetchArray(SQLITE3_NUM);
     if ($row === FALSE) break;
-    $got = TRUE;
     print(implode(',',$row)."\n");
-}
-
-// If we didn't get any, listen for new data
-if (!$got) {
-    $row = $subscriber->recv();
-    print($row."\n");
 }
