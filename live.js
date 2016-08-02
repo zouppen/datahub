@@ -38,6 +38,7 @@ $(function() {
     }
 
     function getNewData(args) {
+	var start = Date.now();
 	// First, get requested data
 	$.get("https://zouppen.iki.fi/poista/ahma-ng/get.php", args, function(csv) {
 	    var lastRow;
@@ -60,6 +61,12 @@ $(function() {
 
 	    // Ask for more
 	    getNewData({r: lastRow});
+	}).fail(function() {
+	    // Okay, hibernation or network error. Keep a pause of 2 minutes.
+	    var minDelay = 1000;
+	    var maxDelay = 120000;
+	    var delay = Math.min(maxDelay, Math.max(minDelay, start + maxDelay - Date.now()));
+	    setTimeout(getNewData, delay, args);
 	});
     }
 
