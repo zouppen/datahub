@@ -60,6 +60,9 @@ $(function() {
 	    var now = Date.now();
 	    moveOld(today, yesterday, now, 86400000);
 	    moveOld(yesterday, devnull, now, 86400000);
+
+	    // Ask for more
+	    getNewData({r: lastRow});
 	    
 	    // Update plot
 	    plot.setData(data);
@@ -74,8 +77,6 @@ $(function() {
 	    });
 	    considerUpdateLegend();
 	    
-	    // Ask for more
-	    getNewData({r: lastRow});
 	}).fail(function() {
 	    // Okay, hibernation or network error. Keep a pause of 2 minutes.
 	    var minDelay = 1000;
