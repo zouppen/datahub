@@ -76,6 +76,13 @@ $(function() {
 		$(this).css('width', '8em');
 	    });
 	    considerUpdateLegend();
+
+	    // Last data
+	    var last = today[today.length-1];
+	    if (last !== undefined) {
+		$('#temp_now').text(today[today.length-1][1] + '°C');
+		$('#temp_at').text('Päivitetty viimeksi '+(new Date(last[0])).toLocaleString());
+	    }
 	    
 	}).fail(function() {
 	    // Okay, hibernation or network error. Keep a pause of 2 minutes.
