@@ -15,8 +15,8 @@ $zmq_publisher->bind("ipc://".$ipc_path);
 chmod($ipc_path, 0777); // Allow access to all local users
 
 // Data source. Ugly, FIXME safe
-//$flow = popen("ssh 80.186.52.58 \"./export_log '$cursor'\"", "r");
-$flow = popen("ssh 80.186.52.58 '$cursor'", "r");
+//$flow = popen("ssh ahma \"./export_log '$cursor'\"", "r");
+$flow = popen("ssh ahma '$cursor'", "r");
 
 while (true) {
     $vars = [];
