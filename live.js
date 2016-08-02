@@ -126,8 +126,11 @@ $(function() {
 		}
 	    }
 
-	    y = series.data[j][1];
-	    legends.eq(i).text(series.label.replace(/: .*/, ": " + y.toFixed(1) + " °C"));
+	    var point = series.data[j];
+	    if (point !== undefined) {
+		var str = point[1].toFixed(1);
+		legends.eq(i).text(series.label.replace(/: .*/, ": " + str + " °C"));
+	    }
 	}
 
 	timehover.text("Aika: "+(new Date(pos.x)).toLocaleString());
