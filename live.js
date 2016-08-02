@@ -23,7 +23,7 @@ $(function() {
 	},
 	xaxis: {
 	    mode: "time",
-	    timeformat: "%H:%M:%S",
+	    timeformat: "%H:%M",
 	    show: true,
 	},
 	crosshair: {
@@ -47,7 +47,7 @@ $(function() {
     function getNewData(args) {
 	var start = Date.now();
 	// First, get requested data
-	$.get("https://zouppen.iki.fi/poista/ahma-ng/get.php", args, function(csv) {
+	$.get("get", args, function(csv) {
 	    var lastRow;
 	    for (let line of csv.split("\n")) {
 		if (line === '') continue; // Skip empty line

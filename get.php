@@ -16,8 +16,8 @@ $get_newer_stmt = $db->prepare("SELECT rowid, ts, value from temp WHERE rowid > 
 $get_ptr_stmt = $db->prepare("SELECT rowid FROM temp WHERE ts >= ? LIMIT 1;");
 $get_last_stmt = $db->prepare("SELECT MAX(rowid) FROM temp");
 
-// TODO support query by date and add intelligent headers
-// "since" query would return Location: rewrite to mathcnig rowid (rounded down to nearest 1000 for example
+// Allow any origin
+header("Access-Control-Allow-Origin: *");
 
 // Fetch historical data
 $raw_row = @$_GET['r'];
@@ -39,9 +39,6 @@ if ($raw_ts !== NULL) {
     print("Provide either r or t parameter\n");
     exit(0);
 }
-
-// Allow any origin
-header("Access-Control-Allow-Origin: *");
 
 // Use provided pointer and search count and data
 $db->exec('BEGIN');
