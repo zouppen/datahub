@@ -139,7 +139,4 @@ $(function() {
 
     $("#placeholder").append("<div id='timehover' style='position:absolute;left: 3em; top: 1em; color:#666;font-size:smaller'></div>");
     var timehover = $('#timehover');
-    
-    // Add the Flot version string to the footer
-    $("#footer").prepend("Powered by Flot " + $.plot.version + " &ndash; ");
 });
