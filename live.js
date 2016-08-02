@@ -5,6 +5,17 @@ $(function() {
     var yesterday = [];
     var devnull = { push: function() {} };
 
+    var locale = ['fi-FI', 'en-GB', 'en-US'];
+    var formatAxis = new Intl.DateTimeFormat(locale, {
+	timezone: 'Europe/Helsinki',
+	hour: '2-digit', minute: '2-digit'
+    });
+    var formatFull = new Intl.DateTimeFormat(locale, {
+	timezone: 'Europe/Helsinki',
+	day:'numeric', month: 'numeric', year: 'numeric',
+	hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
     var data = [
 	{
 	    data: today,
@@ -23,7 +34,9 @@ $(function() {
 	},
 	xaxis: {
 	    mode: "time",
-	    timeformat: "%H:%M",
+	    tickFormatter: function(val, axis) {
+		return formatAxis.format(new Date(val));
+	    },
 	    show: true,
 	},
 	crosshair: {
@@ -80,8 +93,8 @@ $(function() {
 	    // Last data
 	    var last = today[today.length-1];
 	    if (last !== undefined) {
-		$('#temp_now').text(today[today.length-1][1] + '°C');
-		$('#temp_at').text('Päivitetty viimeksi '+(new Date(last[0])).toLocaleString());
+		$('#temp_now').text(today[today.length-1][1].toFixed(1) + '°C');
+		$('#temp_at').text('Päivitetty viimeksi '+formatFull.format(new Date(last[0])));
 	    }
 	    
 	}).fail(function() {
@@ -133,7 +146,7 @@ $(function() {
 	    }
 	}
 
-	timehover.text("Aika: "+(new Date(pos.x)).toLocaleString());
+	timehover.text("Aika: "+formatFull.format(new Date(pos.x)));
 
     }
 
