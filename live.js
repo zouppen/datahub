@@ -3,6 +3,7 @@ $(function() {
     // Keep recent data in buffer
     var today = [];
     var yesterday = [];
+    var yester2day = [];
     var devnull = { push: function() {} };
 
     var locale = ['fi-FI', 'en-GB', 'en-US'];
@@ -18,12 +19,18 @@ $(function() {
 
     var data = [
 	{
-	    data: today,
-	    label: "Tänään: ",
+	    data: yester2day,
+	    label: "48h ennen: ",
+	    color: '#F2EA00',
 	},{
 	    data: yesterday,
-	    label: "Eilen: ",
-	},
+	    label: "24h ennen: ",
+	    color: '#EF9B09',
+	},{
+	    data: today,
+	    label: "Tänään: ",
+	    color: '#EA1612',
+	}
     ];
 
     var plot = $.plot("#placeholder", [], {
@@ -72,7 +79,8 @@ $(function() {
 	    // TODO filter old data
 	    var now = Date.now();
 	    moveOld(today, yesterday, now, 86400000);
-	    moveOld(yesterday, devnull, now, 86400000);
+	    moveOld(yesterday, yester2day, now, 86400000);
+	    moveOld(yester2day, devnull, now, 86400000);
 
 	    // Ask for more
 	    getNewData({r: lastRow});
@@ -86,7 +94,7 @@ $(function() {
 	    legends = $("#placeholder .legendLabel");
 	    legends.each(function () {
 		// fix the widths so they don't jump around
-		$(this).css('width', '8em');
+		$(this).css('width', '9em');
 	    });
 	    considerUpdateLegend();
 
@@ -106,8 +114,8 @@ $(function() {
 	});
     }
 
-    // Get data newer than two days
-    getNewData({t: Math.floor(Date.now()/1000) - 172800});
+    // Get data newer than three days
+    getNewData({t: Math.floor(Date.now()/1000) - 259200});
 
     // Allow hovering
     var legends;
