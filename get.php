@@ -9,6 +9,7 @@ $context = new ZMQContext();
 $subscriber = new ZMQSocket($context, ZMQ::SOCKET_SUB);
 $subscriber->connect("ipc://".__DIR__."/updates.ipc");
 $subscriber->setSockOpt(ZMQ::SOCKOPT_SUBSCRIBE, "");
+$subscriber->setSockOpt(ZMQ::SOCKOPT_RCVTIMEO, 120000);
 
 // Prepare statements
 $get_newer_count_stmt = $db->prepare("SELECT count(*) from temp WHERE rowid > ?");

@@ -68,7 +68,7 @@ $(function() {
 	var start = Date.now();
 	// First, get requested data
 	$.get("get", args, function(csv) {
-	    var lastRow;
+	    var lastRow = args.r;
 	    for (let line of csv.split("\n")) {
 		if (line === '') continue; // Skip empty line
 		var fields = line.split(",");
