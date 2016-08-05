@@ -34,6 +34,13 @@ while (true) {
         }
     }
 
+    // Entry must contain cursor, timestamp, and message. If not, then
+    // it's better to give up 'cause we have received garbage.
+    if (!array_key_exists('MESSAGE', $vars) || !array_key_exists('__CURSOR', $vars) || !array_key_exists('__REALTIME_TIMESTAMP', $vars)) {
+        print("Panic: Not systemd log export format\n");
+        exit(1);
+    }
+    
     // Extract temperature from the message
     $temp_str = explode(',', $vars['MESSAGE'], 5)[3];
 
