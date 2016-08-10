@@ -5,7 +5,9 @@ $(function() {
     var yesterday = [];
     var yester2day = [];
     var devnull = { push: function() {} };
-
+    var meanBuf = [];
+    var meanBufSum = 0;
+    
     var locale = ['fi-FI', 'en-GB', 'en-US'];
     var formatAxis = new Intl.DateTimeFormat(locale, {
 	timezone: 'Europe/Helsinki',
@@ -72,8 +74,25 @@ $(function() {
 	    for (let line of csv.split("\n")) {
 		if (line === '') continue; // Skip empty line
 		var fields = line.split(",");
+		var temp = Number.parseFloat(fields[2]);
 		lastRow = fields[0];
-		today.push([Number.parseInt(fields[1])*1000, Number.parseFloat(fields[2])]);
+		today.push([Number.parseInt(fields[1])*1000, temp]);
+
+		// Keep last 11 elements in the buffer for calculating mean
+		meanBuf.push(temp);
+		meanBufSum += temp;
+		if (meanBuf.length > 11) {
+		    meanBufSum -= meanBuf.shift();
+
+		    // Corner case of data length check, shouldn't
+		    // happen if we receive data normally. Also, allow
+		    // turning the averaging off if there is magic
+		    // #raw hash in the URL.
+		    if (today.length >= 6 && window.location.hash != '#raw') {
+			// Replace element with average of elements +-5 elements and itself
+			today[today.length-6][1] = meanBufSum / 11;
+		    }
+		}
 	    }
 	    
 	    // TODO filter old data
