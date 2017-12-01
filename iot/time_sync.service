@@ -1,0 +1,15 @@
+[Unit]
+Description=Temperature sync
+After=network-online.target
+
+[Service]
+Type=simple
+User=USER
+Group=GROUP
+ExecStart=/usr/bin/socat EXEC:/PATH_TO/push 'EXEC:ssh -CT server433,nofork'
+TimeoutSec=30
+Restart=always
+StartLimitIntervalSec=300
+
+[Install]
+WantedBy=multi-user.target

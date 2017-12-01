@@ -14,59 +14,52 @@ $ipc_path = __DIR__.'/updates.ipc';
 $zmq_publisher->bind("ipc://".$ipc_path);
 chmod($ipc_path, 0777); // Allow access to all local users
 
-// Data source. Ugly, FIXME safe
-//$flow = popen("ssh ahma \"./export_log '$cursor'\"", "r");
-$flow = popen("ssh ahma '$cursor'", "r");
+print("$cursor\n");
 
 while (true) {
-    $vars = [];
-    while (true) {
-        $line = fgets($flow);
-        if ($line === FALSE) {
-            // It's over.
-            break 2;
-        } else if ($line === "\n") {
-            break;
-        } else {
-            // Split the string and put to the storage
-            $pos = strpos($line, '=');
-            $vars[substr($line, 0, $pos)] = substr($line, $pos+1, strlen($line)-$pos-2);
-        }
+    $line = fgets(STDIN);
+    if ($line === FALSE) {
+        // It's over.
+        break;
     }
 
-    // Entry must contain cursor, timestamp, and message. If not, then
-    // it's better to give up 'cause we have received garbage.
-    if (!array_key_exists('MESSAGE', $vars) || !array_key_exists('__CURSOR', $vars) || !array_key_exists('__REALTIME_TIMESTAMP', $vars)) {
-        print("Panic: Not systemd log export format\n");
-        exit(1);
+    $vars = json_decode($line);
+    if ($vars === NULL) {
+        fwrite(STDERR, "Ignoring: Not in systemd log export format\n");
+        continue;
     }
+
+    if ($vars->__CURSOR === $cursor) {
+        fwrite(STDERR, "Ignoring: Duplicated packet\n");
+        continue;
+    }   
     
-    // Extract temperature from the message
-    $temp_str = explode(',', $vars['MESSAGE'], 5)[3];
+    $rtl_433 = json_decode($vars->MESSAGE);
+    if ($rtl_433 === NULL) {
+        fwrite(STDERR, "Ignoring: Not rtl_433 output\n");
+        continue;
+    }
+
+    if ($rtl_433->id !== 36) {
+        fwrite(STDERR, "Ignoring: Not our temperature sensor\n");
+        continue;
+    }
 
     // Now inserting the data and updating the cursor position
     $db->exec('BEGIN');
-    if (is_numeric($temp_str)) {
-        // Correct data. Store it.
-        $data = [
-            floor($vars['__REALTIME_TIMESTAMP'] / 1000000), // seconds
-            doubleval($temp_str),
-        ];
-        db_execute($add_stmt, $data);
-        array_unshift($data, $db->lastInsertRowID());
-    } else {
-        // Incorrect data, skip.
-        $data = NULL;
-        print("Skipping invalid line: ".$vars['MESSAGE']."\n");
-    }
-    db_execute($cursor_stmt, [$vars['__CURSOR']]);
+    // Correct data. Store it.
+    $data = [
+        floor($vars->__REALTIME_TIMESTAMP / 1000000), // seconds
+        $rtl_433->temperature_C,
+    ];
+    db_execute($add_stmt, $data);
+    array_unshift($data, $db->lastInsertRowID());
+    db_execute($cursor_stmt, [$vars->__CURSOR]);
     $db->exec('END');
 
     // After storing the data, notify. Other way around the long
     // poller might miss some data. And rowid wouldn't be available.
-    if ($data !== NULL) {
-        $out = implode(',',$data);
-        $zmq_publisher->send($out);
-        print($out."\n");
-    }
+    $out = implode(',',$data);
+    $zmq_publisher->send($out);
+    print("$out\n");
 }

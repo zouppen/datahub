@@ -1,6 +1,7 @@
 <?php
 $db = new SQLite3(__DIR__.'/ahma.sqlite');
 $db->busyTimeout(2000);
+$db->exec('PRAGMA journal_mode = wal');
 
 function err($msg) {
     error_log($msg);
