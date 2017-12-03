@@ -7,12 +7,6 @@ $cursor = $db->querySingle('SELECT cursor FROM cursor');
 $add_stmt = $db->prepare("INSERT INTO temp (ts, value) VALUES (?,?)");
 $cursor_stmt = $db->prepare("UPDATE cursor SET cursor=?");
 
-// 0MQ
-$zmq_context = new ZMQContext();
-$zmq_publisher = $zmq_context->getSocket(ZMQ::SOCKET_PUB);
-$ipc_path = __DIR__.'/updates.ipc';
-$zmq_publisher->bind("ipc://".$ipc_path);
-chmod($ipc_path, 0777); // Allow access to all local users
 
 print("$cursor\n");
 
@@ -57,9 +51,4 @@ while (true) {
     db_execute($cursor_stmt, [$vars->__CURSOR]);
     $db->exec('END');
 
-    // After storing the data, notify. Other way around the long
-    // poller might miss some data. And rowid wouldn't be available.
-    $out = implode(',',$data);
-    $zmq_publisher->send($out);
-    print("$out\n");
 }
