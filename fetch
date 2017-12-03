@@ -19,23 +19,14 @@ while (true) {
 
     $vars = json_decode($line);
     if ($vars === NULL) {
-        fwrite(STDERR, "Ignoring: Not in systemd log export format\n");
-        continue;
+        fwrite(STDERR, "Fatal: Not in systemd-like log format\n");
+        break;
     }
 
     if ($vars->__CURSOR === $cursor) {
+        // Due to systemd bug, sometimes --after-cursor print the
+        // cursor data, too. Ignoring that data.
         fwrite(STDERR, "Ignoring: Duplicated packet\n");
-        continue;
-    }   
-    
-    $rtl_433 = json_decode($vars->MESSAGE);
-    if ($rtl_433 === NULL) {
-        fwrite(STDERR, "Ignoring: Not rtl_433 output\n");
-        continue;
-    }
-
-    if ($rtl_433->id !== 36) {
-        fwrite(STDERR, "Ignoring: Not our temperature sensor\n");
         continue;
     }
 
