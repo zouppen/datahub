@@ -1,0 +1,13 @@
+#!/bin/sh -eu
+
+# Read current cursor
+read -r cursor
+if test -n "$cursor"; then
+    ptr="--after-cursor=$cursor"
+else
+    ptr="--"
+fi
+
+journalctl -fq -u "$1" -n all -o json "$ptr" _TRANSPORT=stdout | jq -c --unbuffered '{ cursor: .__CURSOR, time: (.__REALTIME_TIMESTAMP | tonumber / 1000000 | floor), data: .MESSAGE | fromjson | del(.time)}'
+
+#journalctl -q -u "$1" -n all -o json "$ptr" _TRANSPORT=stdout | jq -c --unbuffered '{ cursor: .__CURSOR, time: (.__REALTIME_TIMESTAMP | tonumber / 1000000 | floor), data: .MESSAGE | fromjson | del(.time)} | select(.data.temperature_C != null)'

@@ -2,13 +2,23 @@
 <?php
 require_once(__DIR__.'/common.php');
 
+if (!array_key_exists(1, $argv)) {
+    fwrite(STDERR, "Usage: ${argv[0]} DATA_SOURCE\n");
+    exit(0);
+}
+
+$source = $argv[1];
+
 // Database
-$cursor = $db->querySingle('SELECT cursor FROM cursor');
-$add_stmt = $db->prepare("INSERT INTO temp (ts, value) VALUES (?,?)");
-$cursor_stmt = $db->prepare("UPDATE cursor SET cursor=?");
+$cursor_start_stmt = $db->prepare('SELECT cursor FROM cursor WHERE source=?');
+$cursor_update_stmt = $db->prepare("UPDATE cursor SET cursor=? WHERE source=?");
+$cursor_create_stmt = $db->prepare("INSERT INTO cursor (cursor, source) VALUES (?,?)");
+$point_stmt = $db->prepare("INSERT INTO point (source, ts) VALUES (?,?)");
+$data_stmt = $db->prepare("INSERT INTO point_data (point, key, value) VALUES (?,?,?)");
 
-
-print("$cursor\n");
+$cursor_res = db_execute($cursor_start_stmt, [$source])->fetchArray(SQLITE3_NUM);
+$cursor_start = $cursor_res === FALSE ? "" : $cursor_res[0];
+print("$cursor_start\n");
 
 while (true) {
     $line = fgets(STDIN);
@@ -23,7 +33,7 @@ while (true) {
         break;
     }
 
-    if ($vars->__CURSOR === $cursor) {
+    if ($vars->cursor === $cursor_start) {
         // Due to systemd bug, sometimes --after-cursor print the
         // cursor data, too. Ignoring that data.
         fwrite(STDERR, "Ignoring: Duplicated packet\n");
@@ -32,14 +42,27 @@ while (true) {
 
     // Now inserting the data and updating the cursor position
     $db->exec('BEGIN');
-    // Correct data. Store it.
-    $data = [
-        floor($vars->__REALTIME_TIMESTAMP / 1000000), // seconds
-        $rtl_433->temperature_C,
-    ];
-    db_execute($add_stmt, $data);
-    array_unshift($data, $db->lastInsertRowID());
-    db_execute($cursor_stmt, [$vars->__CURSOR]);
-    $db->exec('END');
 
+    // Insert just time and source name
+    db_execute($point_stmt, [
+        $source,
+        $vars->time,
+    ]);
+    $point_id = $db->lastInsertRowID();
+
+    // Insert into relation table
+    foreach ($vars->data as $key => $value) {
+        db_execute($data_stmt, [
+            $point_id,
+            $key,
+            $value,
+        ]);
+    }
+
+    $cursor_data = [$vars->cursor, $source];
+    db_execute($cursor_update_stmt, $cursor_data);
+    if (!$db->changes()) {
+        db_execute($cursor_create_stmt, $cursor_data);
+    }
+    $db->exec('END');
 }
