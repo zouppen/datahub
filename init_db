@@ -1,0 +1,12 @@
+#!/bin/sh -eu
+#
+# Creates empty database
+
+cd "`dirname $0`"
+if test -e db; then
+    echo "Not creating database: db/ already exists in `pwd`" >&2
+    exit 1
+fi
+
+mkdir -p db
+sqlite3 db/db.sqlite <schema.sql
