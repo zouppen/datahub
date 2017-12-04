@@ -1,0 +1,42 @@
+{
+    "freezer": {
+	"temperature": {
+	    "source": "hacklabjkl",
+	    "match": {
+		"channel": 1,
+		"id" : 252,
+		"model" : "Nexus Temperature/Humidity"
+	    },
+	    "show": "temperature_C"
+	},
+	"humidity": {
+	    "source": "hacklabjkl",
+	    "match": {
+		"channel": 1,
+		"id" : 252,
+		"model" : "Nexus Temperature/Humidity"
+	    },
+	    "show": "humidity"
+	}
+    },
+    "fridge": {
+	"temperature": {
+	    "source": "hacklabjkl",
+	    "match": {
+		"channel": 1,
+		"id" : 185,
+		"model" : "Nexus Temperature/Humidity"
+	    },
+	    "show": "temperature_C"
+	},
+	"humidity": {
+	    "source": "hacklabjkl",
+	    "match": {
+		"channel": 1,
+		"id" : 185,
+		"model" : "Nexus Temperature/Humidity"
+	    },
+	    "show": "humidity"
+	}
+    }
+}
