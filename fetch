@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-require_once(__DIR__.'/common.php');
+require_once(__DIR__.'/lib/common.php');
 
 if (!array_key_exists(1, $argv)) {
     fwrite(STDERR, "Usage: ${argv[0]} DATA_SOURCE\n");
